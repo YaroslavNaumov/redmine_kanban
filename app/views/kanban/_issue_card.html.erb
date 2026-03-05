@@ -1,0 +1,54 @@
+<%
+  priority_css = case issue.priority.name.downcase
+    when /срочн|urgent/  then 'priority-urgent'
+    when /высок|high/    then 'priority-high'
+    when /норм|normal/   then 'priority-normal'
+    when /низк|low/      then 'priority-low'
+    when /очень|minimal/ then 'priority-very-low'
+    else 'priority-normal'
+  end
+%>
+<div class="kanban-card <%= priority_css %>"
+     data-issue-id="<%= issue.id %>"
+     draggable="<%= can_move ? 'true' : 'false' %>">
+
+  <div class="kanban-card-header">
+    <span class="kanban-card-id">
+      <%= link_to "##{issue.id}", issue_path(issue), target: '_blank' %>
+    </span>
+    <span class="kanban-card-tracker"><%= issue.tracker.name %></span>
+  </div>
+
+  <div class="kanban-card-title">
+    <%= link_to issue.subject, issue_path(issue), target: '_blank' %>
+  </div>
+
+  <div class="kanban-card-meta">
+    <% if display_settings[:show_priority] %>
+      <span class="kanban-priority"><%= issue.priority.name %></span>
+    <% end %>
+    <% if display_settings[:show_assignee] && issue.assigned_to %>
+      <span class="kanban-assignee">
+        <%= avatar(issue.assigned_to, size: 16) %>
+        <%= issue.assigned_to.name %>
+      </span>
+    <% end %>
+  </div>
+
+  <% if display_settings[:show_estimated_hours] && issue.estimated_hours.present? %>
+    <div class="kanban-card-hours">Est: <%= issue.estimated_hours %>h ⏱</div>
+  <% end %>
+
+  <% if display_settings[:show_spent_hours] && User.current.allowed_to?(:view_time_entries, issue.project) %>
+    <% spent = issue.time_entries.sum(:hours) %>
+    <% if spent > 0 %>
+      <div class="kanban-card-hours kanban-card-spent">Spent: <%= spent.round(2) %>h 🕐</div>
+    <% end %>
+  <% end %>
+
+  <% if issue.done_ratio > 0 %>
+    <div class="kanban-card-progress">
+      <div class="progress-bar" style="width:<%= issue.done_ratio %>%;"></div>
+    </div>
+  <% end %>
+</div>

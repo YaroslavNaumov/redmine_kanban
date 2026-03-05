@@ -1,0 +1,63 @@
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'kanban', plugin: 'redmine_kanban' %>
+<% end %>
+
+<div class="contextual">
+  <%= link_to l(:label_kanban_settings), project_kanban_settings_path(@project), class: 'icon icon-settings' if User.current.allowed_to?(:manage_kanban_settings, @project) %>
+</div>
+
+<h2><%= l(:label_kanban) %></h2>
+
+<div id="kanban-board" class="kanban-board">
+  <% if @issues_by_status.empty? %>
+    <div class="nodata"><%= l(:label_no_data) %></div>
+  <% else %>
+    <%# First open statuses, then closed ones %>
+    <% open_statuses   = @issues_by_status.select { |_, d| !d[:is_closed] } %>
+    <% closed_statuses = @issues_by_status.select { |_, d|  d[:is_closed] } %>
+
+    <% (open_statuses.to_a + closed_statuses.to_a).each do |status_id, status_data| %>
+      <div class="kanban-column <%= 'kanban-column--closed' if status_data[:is_closed] %>"
+           data-status-id="<%= status_id %>"
+           data-closed="<%= status_data[:is_closed] %>">
+
+        <div class="kanban-column-header">
+          <h3>
+            <% if status_data[:is_closed] %>
+              <span class="kanban-closed-icon" title="<%= l(:label_closed_statuses) %>">✓</span>
+            <% end %>
+            <%= status_data[:status].name %>
+          </h3>
+          <span class="kanban-count"><%= status_data[:count] %></span>
+        </div>
+
+        <div class="kanban-column-content" data-status-id="<%= status_id %>">
+          <% if status_data[:issues].empty? %>
+            <div class="kanban-empty-state"><%= l(:label_no_issues) %></div>
+          <% else %>
+            <% status_data[:issues].each do |issue| %>
+              <%= render 'issue_card',
+                    issue: issue,
+                    display_settings: @display_settings,
+                    can_move: @can_move %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<div id="kanban-notification" style="display:none;"></div>
+
+<%= javascript_include_tag 'kanban', plugin: 'redmine_kanban' %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    KanbanBoard.init({
+      projectId:    <%= @project.id %>,
+      moveIssueUrl: '<%= project_kanban_move_issue_path(@project) %>',
+      csrfToken:    '<%= form_authenticity_token %>',
+      canMove:      <%= @can_move ? 'true' : 'false' %>
+    });
+  });
+</script>

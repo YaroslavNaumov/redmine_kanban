@@ -1,0 +1,61 @@
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'kanban', plugin: 'redmine_kanban' %>
+<% end %>
+
+<h2><%= l(:label_kanban_settings) %></h2>
+
+<div class="box">
+  <%= form_with url: project_kanban_update_settings_path(@project), method: :post, local: true do |f| %>
+    <fieldset class="box">
+      <legend><%= l(:label_kanban_display_options) %></legend>
+
+      <div class="field">
+        <%= label_tag :kanban_board_name, l(:field_name) %>
+        <%= text_field_tag 'kanban_board[name]', @kanban_board.name, class: 'fullwidth' %>
+      </div>
+
+      <div class="field">
+        <%= label_tag :kanban_board_description, l(:field_description) %>
+        <%= text_area_tag 'kanban_board[description]', @kanban_board.description, rows: 3, class: 'fullwidth' %>
+      </div>
+
+      <div class="field">
+        <%= check_box_tag 'kanban_board[enabled]', '1', @kanban_board.enabled %>
+        <%= label_tag 'kanban_board[enabled]', l(:field_enabled) %>
+      </div>
+    </fieldset>
+
+    <fieldset class="box">
+      <legend><%= l(:label_kanban_card_display) %></legend>
+
+      <div class="field">
+        <%= check_box_tag 'kanban_board[show_assignee]', '1', @kanban_board.show_assignee %>
+        <%= label_tag 'kanban_board[show_assignee]', l(:field_show_assignee) %>
+      </div>
+
+      <div class="field">
+        <%= check_box_tag 'kanban_board[show_priority]', '1', @kanban_board.show_priority %>
+        <%= label_tag 'kanban_board[show_priority]', l(:field_show_priority) %>
+      </div>
+
+      <div class="field">
+        <%= check_box_tag 'kanban_board[show_estimated_hours]', '1', @kanban_board.show_estimated_hours %>
+        <%= label_tag 'kanban_board[show_estimated_hours]', l(:field_show_estimated_hours) %>
+      </div>
+
+      <div class="field">
+        <%= check_box_tag 'kanban_board[show_spent_hours]', '1', @kanban_board.show_spent_hours %>
+        <%= label_tag 'kanban_board[show_spent_hours]', l(:field_show_spent_hours) %>
+      </div>
+    </fieldset>
+
+    <div class="buttons">
+      <%= submit_tag l(:button_save) %>
+      <%= link_to l(:button_cancel), project_kanban_path(@project), class: 'btn' %>
+    </div>
+  <% end %>
+</div>
+
+<div style="margin-top: 20px;">
+  <%= link_to l(:label_back_to_kanban), project_kanban_path(@project), class: 'btn' %>
+</div>

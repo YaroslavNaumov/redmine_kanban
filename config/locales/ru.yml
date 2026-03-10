@@ -23,3 +23,7 @@ ru:
   error_kanban_no_permission: "У вас нет права перемещать задачи на канбан-доске."
   error_kanban_issue_not_editable: "У вашей роли нет права редактировать задачи. Попросите администратора включить право «Edit issues»."
   field_show_spent_hours: "Показывать затраченное время"
+  label_member_filter: "Участник"
+  label_all_members: "Все участники"
+  label_kanban_columns: "Настройки колонок"
+  field_hide_closed_columns: "Скрывать колонки с закрытыми статусами"

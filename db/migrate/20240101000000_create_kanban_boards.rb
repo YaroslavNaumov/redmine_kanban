@@ -9,6 +9,7 @@ class CreateKanbanBoards < ActiveRecord::Migration[6.1]
       t.boolean  :show_priority,        null: false, default: true
       t.boolean  :show_estimated_hours, null: false, default: true
       t.boolean  :show_spent_hours,     null: false, default: true
+      t.boolean  :hide_closed_columns,  null: false, default: true
       t.timestamps null: false
     end
 

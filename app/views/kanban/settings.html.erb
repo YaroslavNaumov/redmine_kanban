@@ -49,6 +49,15 @@
       </div>
     </fieldset>
 
+    <fieldset class="box">
+      <legend><%= l(:label_kanban_columns) %></legend>
+
+      <div class="field">
+        <%= check_box_tag 'kanban_board[hide_closed_columns]', '1', @kanban_board.hide_closed_columns %>
+        <%= label_tag 'kanban_board[hide_closed_columns]', l(:field_hide_closed_columns) %>
+      </div>
+    </fieldset>
+
     <div class="buttons">
       <%= submit_tag l(:button_save) %>
       <%= link_to l(:button_cancel), project_kanban_path(@project), class: 'btn' %>

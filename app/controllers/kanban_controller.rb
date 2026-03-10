@@ -9,7 +9,9 @@ class KanbanController < ApplicationController
   helper :projects
 
   def index
-    @issues_by_status  = @kanban_board.get_issues_by_status
+    @members           = @project.members.includes(:user).map(&:user).sort_by(&:name)
+    @assignee_id       = params[:assignee_id].presence&.to_i
+    @issues_by_status  = @kanban_board.get_issues_by_status(assignee_id: @assignee_id)
     @display_settings  = @kanban_board.display_settings
     @can_move          = User.current.allowed_to?(:move_kanban, @project) &&
                          User.current.allowed_to?(:edit_issues, @project)
@@ -27,7 +29,7 @@ class KanbanController < ApplicationController
   def update_settings
     # Checkboxes are not sent by the browser when unchecked - we set them to false explicitly
     attrs = kanban_board_params.to_h
-    %w[enabled show_assignee show_priority show_estimated_hours show_spent_hours].each do |field|
+    %w[enabled show_assignee show_priority show_estimated_hours show_spent_hours hide_closed_columns].each do |field|
       attrs[field] = attrs[field].present? ? true : false
     end
 
@@ -141,7 +143,8 @@ class KanbanController < ApplicationController
   def kanban_board_params
     params.require(:kanban_board).permit(
       :name, :description, :enabled,
-      :show_assignee, :show_priority, :show_estimated_hours, :show_spent_hours
+      :show_assignee, :show_priority, :show_estimated_hours, :show_spent_hours,
+      :hide_closed_columns
     )
   end
 end

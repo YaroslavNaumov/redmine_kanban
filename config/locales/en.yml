@@ -23,3 +23,7 @@ en:
   error_kanban_no_permission: "You don't have permission to move issues on the Kanban board."
   error_kanban_issue_not_editable: "Your role doesn't have permission to edit issues. Ask the administrator to enable 'Edit issues'."
   field_show_spent_hours: "Show spent hours"
+  label_member_filter: "Member"
+  label_all_members: "All members"
+  label_kanban_columns: "Column settings"
+  field_hide_closed_columns: "Hide closed-status columns"

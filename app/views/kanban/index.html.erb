@@ -8,6 +8,17 @@
 
 <h2><%= l(:label_kanban) %></h2>
 
+<div class="kanban-filter-bar">
+  <%= form_tag(project_kanban_path(@project), method: :get, id: 'kanban-filter-form') do %>
+    <label><%= l(:label_member_filter) %>:</label>
+    <%= select_tag :assignee_id,
+          options_for_select([[l(:label_all_members), '']] + @members.map { |u| [u.name, u.id] }, @assignee_id),
+          onchange: 'this.form.submit()',
+          class: 'kanban-filter-select' %>
+    <noscript><%= submit_tag l(:button_apply) %></noscript>
+  <% end %>
+</div>
+
 <div id="kanban-board" class="kanban-board">
   <% if @issues_by_status.empty? %>
     <div class="nodata"><%= l(:label_no_data) %></div>

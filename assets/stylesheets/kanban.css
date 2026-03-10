@@ -16,7 +16,7 @@
   border-radius: 6px;
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 200px);
+  max-height: calc(100vh - 300px);
 }
 
 .kanban-column.drag-over {
@@ -246,4 +246,20 @@
 
 .kanban-card-spent {
   color: #888;
+}
+
+.kanban-filter-bar {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kanban-filter-bar label {
+  font-weight: bold;
+}
+.kanban-filter-select {
+  padding: 3px 6px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  width: 200px;
 }

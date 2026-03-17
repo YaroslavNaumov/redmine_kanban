@@ -29,7 +29,7 @@ class KanbanBoard < ActiveRecord::Base
       result[status.id] = {
         status:    status,
         issues:    issues,
-        count:     issues.count,
+        count:     issues.size,
         is_closed: status.is_closed
       }
     end
@@ -38,19 +38,21 @@ class KanbanBoard < ActiveRecord::Base
 
   # All open statuses + closed ones that have tasks in this project
   def get_statuses
-    open_statuses   = IssueStatus.where(is_closed: false).order(:position)
-    closed_with_issues = IssueStatus
+    open_statuses = IssueStatus.sorted.reject(&:is_closed)
+      closed_with_issues = IssueStatus
       .where(is_closed: true)
       .joins("INNER JOIN issues ON issues.status_id = issue_statuses.id")
+      .merge(Issue.visible(User.current))
       .where("issues.project_id = ?", project_id)
-      .order(:position)
       .distinct
-
+      .order(:position)
+  
     (open_statuses + closed_with_issues).uniq(&:id)
   end
 
   def get_issues_for_status(status_id, assignee_id: nil)
-    scope = Issue.where(project_id: project_id, status_id: status_id)
+    scope = Issue.visible(User.current)
+                 .where(project_id: project_id, status_id: status_id)
                  .includes(:assigned_to, :priority, :tracker, :time_entries)
                  .order('issues.id DESC')
     scope = scope.where(assigned_to_id: assignee_id) if assignee_id.present?

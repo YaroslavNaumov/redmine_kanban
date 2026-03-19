@@ -2,6 +2,22 @@ var KanbanBoard = (function () {
   var config = {};
   var draggedCard = null;
   var pendingMove = null;
+  var isMoving = false;
+  var SELECTORS = {
+    cardDraggable: '.kanban-card[draggable="true"]',
+    card: '.kanban-card',
+    column: '.kanban-column',
+    columnContent: '.kanban-column-content',
+    count: '.kanban-count',
+    emptyState: '.kanban-empty-state',
+    notification: '#kanban-notification'
+  };
+  var CLASSES = {
+    dragging: 'dragging',
+    dragOver: 'drag-over',
+    emptyState: 'kanban-empty-state',
+    closedCard: 'kanban-card--closed'
+  };
 
   function init(options) {
     config = options || {};
@@ -11,9 +27,9 @@ var KanbanBoard = (function () {
   }
 
   function setupDragDrop() {
-    document.querySelectorAll('.kanban-card[draggable="true"]').forEach(bindCard);
+    document.querySelectorAll(SELECTORS.cardDraggable).forEach(bindCard);
 
-    document.querySelectorAll('.kanban-column-content').forEach(function (col) {
+    document.querySelectorAll(SELECTORS.columnContent).forEach(function (col) {
       col.addEventListener('dragover',  onDragOver);
       col.addEventListener('dragleave', onDragLeave);
       col.addEventListener('drop',      onDrop);
@@ -27,18 +43,18 @@ var KanbanBoard = (function () {
 
   function onDragStart(e) {
     draggedCard = this;
-    this.classList.add('dragging');
+    this.classList.add(CLASSES.dragging);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', this.dataset.issueId);
   }
 
   function onDragEnd() {
-    this.classList.remove('dragging');
-    document.querySelectorAll('.kanban-column').forEach(function (c) {
-      c.classList.remove('drag-over');
+    this.classList.remove(CLASSES.dragging);
+    document.querySelectorAll(SELECTORS.column).forEach(function (c) {
+      c.classList.remove(CLASSES.dragOver);
     });
 
-    if (pendingMove) {
+    if (pendingMove && !isMoving) {
       var move = pendingMove;
       pendingMove = null;
       setTimeout(function () {
@@ -52,27 +68,29 @@ var KanbanBoard = (function () {
   function onDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    this.closest('.kanban-column').classList.add('drag-over');
+    this.closest(SELECTORS.column).classList.add(CLASSES.dragOver);
   }
 
   function onDragLeave(e) {
-    var col = this.closest('.kanban-column');
-    if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+    var col = this.closest(SELECTORS.column);
+    if (!col.contains(e.relatedTarget)) col.classList.remove(CLASSES.dragOver);
   }
 
   function onDrop(e) {
     e.preventDefault();
 
-    var targetColEl   = this.closest('.kanban-column');
+    if (isMoving) return;
+
+    var targetColEl   = this.closest(SELECTORS.column);
     var targetContent = this;
-    targetColEl.classList.remove('drag-over');
+    targetColEl.classList.remove(CLASSES.dragOver);
 
     var issueId     = e.dataTransfer.getData('text/plain');
     var newStatusId = targetColEl.dataset.statusId;
 
     if (!issueId || !newStatusId || !draggedCard) return;
 
-    var sourceColEl = draggedCard.closest('.kanban-column');
+    var sourceColEl = draggedCard.closest(SELECTORS.column);
     if (sourceColEl && sourceColEl.dataset.statusId === newStatusId) return;
 
     pendingMove = {
@@ -84,6 +102,9 @@ var KanbanBoard = (function () {
   }
 
   function applyMove(card, targetContent, issueId, newStatusId) {
+    if (isMoving) return;
+    isMoving = true;
+
     var originalParent      = card.parentNode;
     var originalNextSibling = card.nextSibling;
 
@@ -99,53 +120,58 @@ var KanbanBoard = (function () {
     xhr.onload = function () {
       var data;
       try { data = JSON.parse(xhr.responseText); } catch (err) { data = {}; }
+      isMoving = false;
 
       if (xhr.status >= 200 && xhr.status < 300 && data.success) {
         // If the card lands in a closed column, we add a visual of the closed column.
-        var targetCol = targetContent.closest('.kanban-column');
-        if (targetCol && targetCol.dataset.closed === 'true') {
-          card.classList.add('kanban-card--closed');
-        } else {
-          card.classList.remove('kanban-card--closed');
-        }
-        showNotification(data.message || 'The task has been moved', 'success');
+        var targetCol = targetContent.closest(SELECTORS.column);
+        setCardClosedState(card, targetCol);
+        showNotification(config.i18n?.moveSuccess, 'success');
       } else {
-        if (originalNextSibling) {
-          originalParent.insertBefore(card, originalNextSibling);
-        } else {
-          originalParent.appendChild(card);
-        }
-        updateCounts();
-        showNotification(data.message || 'Error updating task', 'error');
+        rollbackMove(card, originalParent, originalNextSibling);
+        showNotification(data.message || config.i18n?.updateError, 'error');
       }
     };
 
     xhr.onerror = function () {
-      if (originalNextSibling) {
-        originalParent.insertBefore(card, originalNextSibling);
-      } else {
-        originalParent.appendChild(card);
-      }
-      updateCounts();
-      showNotification('Network error', 'error');
+      isMoving = false;
+      rollbackMove(card, originalParent, originalNextSibling);
+      showNotification(config.i18n?.networkError, 'error');
     };
 
     xhr.send(JSON.stringify({ issue_id: issueId, new_status_id: newStatusId }));
   }
 
+  function rollbackMove(card, originalParent, originalNextSibling) {
+    if (originalNextSibling) {
+      originalParent.insertBefore(card, originalNextSibling);
+    } else {
+      originalParent.appendChild(card);
+    }
+    updateCounts();
+  }
+
+  function setCardClosedState(card, column) {
+    if (column && column.dataset.closed === 'true') {
+      card.classList.add(CLASSES.closedCard);
+    } else {
+      card.classList.remove(CLASSES.closedCard);
+    }
+  }
+
   function updateCounts() {
-    document.querySelectorAll('.kanban-column').forEach(function (col) {
-      var count = col.querySelectorAll('.kanban-card').length;
-      var badge = col.querySelector('.kanban-count');
-      var body  = col.querySelector('.kanban-column-content');
-      var empty = col.querySelector('.kanban-empty-state');
+    document.querySelectorAll(SELECTORS.column).forEach(function (col) {
+      var count = col.querySelectorAll(SELECTORS.card).length;
+      var badge = col.querySelector(SELECTORS.count);
+      var body  = col.querySelector(SELECTORS.columnContent);
+      var empty = col.querySelector(SELECTORS.emptyState);
 
       if (badge) badge.textContent = count;
 
       if (count === 0 && !empty) {
         var div = document.createElement('div');
-        div.className = 'kanban-empty-state';
-        div.textContent = 'No tasks';
+        div.className = CLASSES.emptyState;
+        div.textContent = config.i18n?.noIssues;
         body.appendChild(div);
       } else if (count > 0 && empty) {
         empty.remove();
@@ -154,7 +180,7 @@ var KanbanBoard = (function () {
   }
 
   function showNotification(msg, type) {
-    var el = document.getElementById('kanban-notification');
+    var el = document.querySelector(SELECTORS.notification);
     if (!el) return;
     el.textContent   = msg;
     el.className     = 'notification ' + type;

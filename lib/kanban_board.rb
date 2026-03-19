@@ -9,10 +9,7 @@ class KanbanBoard < ActiveRecord::Base
   scope :enabled, -> { where(enabled: true) }
 
   def self.for_project(project)
-    find_or_create_by(project_id: project.id) do |board|
-      board.name        = "#{project.name} Kanban"
-      board.description = "Kanban board for #{project.name}"
-    end
+    find_by(project_id: project.id) || new(project: project)
   end
 
 # Returns all statuses (open + closed) that have tasks in the project,
@@ -89,8 +86,8 @@ class KanbanBoard < ActiveRecord::Base
   end
 
   def set_defaults
-    self.name                 ||= project ? "#{project.name} Kanban" : 'Kanban'
-    self.description          ||= ''
+    self.name = project ? "#{project.name} Kanban" : 'Kanban' if self.name.blank?
+    self.description = project ? "Kanban board for #{project.name}" : '' if self.description.blank?
     self.enabled                = true  if self[:enabled].nil?
     self.show_assignee          = true  if self[:show_assignee].nil?
     self.show_priority          = true  if self[:show_priority].nil?

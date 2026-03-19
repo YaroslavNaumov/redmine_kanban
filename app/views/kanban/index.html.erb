@@ -68,7 +68,13 @@
       projectId:    <%= @project.id %>,
       moveIssueUrl: '<%= project_kanban_move_issue_path(@project) %>',
       csrfToken:    '<%= form_authenticity_token %>',
-      canMove:      <%= @can_move ? 'true' : 'false' %>
+      canMove:      <%= @can_move ? 'true' : 'false' %>,
+      i18n: {
+        noIssues: '<%= j l(:label_no_issues) %>',
+        moveSuccess: '<%= j l(:notice_kanban_issue_moved_fallback) %>',
+        updateError: '<%= j l(:error_issue_update_failed_fallback) %>',
+        networkError: '<%= j l(:error_network) %>'
+      }
     });
   });
 </script>

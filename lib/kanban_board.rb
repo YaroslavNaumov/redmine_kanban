@@ -52,7 +52,8 @@ class KanbanBoard < ActiveRecord::Base
                  .where(project_id: project_id, status_id: status_id)
                  .includes(:assigned_to, :priority, :tracker, :time_entries)
                  .order('issues.id DESC')
-    scope = scope.where(assigned_to_id: assignee_id) if assignee_id.present?
+    scope = scope.where(assigned_to_id: nil)       if assignee_id == 0
+    scope = scope.where(assigned_to_id: assignee_id) if assignee_id.present? && assignee_id != 0
     scope
   end
 

@@ -28,5 +28,6 @@ en:
   field_show_spent_hours: "Show spent hours"
   label_member_filter: "Member"
   label_all_members: "All members"
+  label_unassigned: "Unassigned"
   label_kanban_columns: "Column settings"
   field_hide_closed_columns: "Hide closed-status columns"

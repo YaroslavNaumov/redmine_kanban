@@ -10,7 +10,8 @@ class KanbanController < ApplicationController
 
   def index
     @members           = @project.members.includes(:user).map(&:user).sort_by(&:name)
-    @assignee_id       = params[:assignee_id].presence&.to_i
+    raw_assignee       = params[:assignee_id]
+    @assignee_id       = raw_assignee.present? ? raw_assignee.to_i : nil
     @issues_by_status  = @kanban_board.get_issues_by_status(assignee_id: @assignee_id)
     @display_settings  = @kanban_board.display_settings
     @can_move          = User.current.allowed_to?(:move_kanban, @project) &&

@@ -22,11 +22,11 @@ class KanbanBoard < ActiveRecord::Base
       # Skipping closed columns if the hiding setting is enabled
       next if status.is_closed && cast_bool(hide_closed_columns)
 
-      issues = get_issues_for_status(status.id, assignee_id: assignee_id)
+      issues = get_issues_for_status(status.id, assignee_id: assignee_id).to_a
       result[status.id] = {
         status:    status,
         issues:    issues,
-        count:     issues.size,
+        count:     issues.length,
         is_closed: status.is_closed
       }
     end
@@ -66,6 +66,7 @@ class KanbanBoard < ActiveRecord::Base
       priority_id:     issue.priority.id,
       assigned_to:     issue.assigned_to&.name || '',
       estimated_hours: issue.estimated_hours,
+      spent_hours:     spent_hours_for(issue),
       done_ratio:      issue.done_ratio,
       url:             "/issues/#{issue.id}"
     }
@@ -84,6 +85,10 @@ class KanbanBoard < ActiveRecord::Base
 
   def cast_bool(val)
     ActiveRecord::Type::Boolean.new.cast(val)
+  end
+
+  def spent_hours_for(issue)
+    issue.time_entries.to_a.sum(&:hours).to_f.round(2)
   end
 
   def set_defaults

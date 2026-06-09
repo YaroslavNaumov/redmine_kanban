@@ -36,6 +36,8 @@ Redmine::Plugin.register :redmine_kanban do
     'enable_kanban'          => '1',
     'show_assignee'          => '1',
     'show_priority'          => '1',
-    'show_estimated_hours'   => '1'
+    'show_estimated_hours'   => '1',
+    'show_spent_hours'       => '1',
+    'hide_closed_columns'    => '0'
   }, partial: 'settings/kanban_settings'
 end

@@ -4,6 +4,7 @@ class KanbanController < ApplicationController
   before_action :check_move_permission,  only: [:move_issue]
   before_action :check_manage_permission,only: [:settings, :update_settings]
   before_action :find_kanban_board,      only: [:index, :settings, :update_settings, :move_issue, :get_issues]
+  before_action :check_board_enabled,    only: [:index, :move_issue, :get_issues]
 
   helper :issues
   helper :projects
@@ -19,7 +20,7 @@ class KanbanController < ApplicationController
 
     respond_to do |format|
       format.html
-      format.json { render json: @issues_by_status }
+      format.json { render json: { success: true, statuses: format_statuses(@issues_by_status) } }
     end
   end
 
@@ -73,6 +74,10 @@ class KanbanController < ApplicationController
       end
 
       new_status = IssueStatus.find(new_status_id)
+
+      unless status_transition_allowed?(issue, new_status)
+        return render json: { success: false, message: l(:error_kanban_transition_not_allowed) }, status: :unprocessable_entity
+      end
 
       # init_journal creates an entry in the task history (as with normal editing)
       issue.init_journal(User.current)
@@ -132,13 +137,54 @@ class KanbanController < ApplicationController
   end
 
   def check_move_permission
-    unless User.current.allowed_to?(:move_kanban, @project)
+    unless User.current.allowed_to?(:move_kanban, @project) && User.current.allowed_to?(:edit_issues, @project)
       return render json: { success: false, message: l(:error_kanban_no_permission) }, status: :forbidden
     end
   end
 
   def check_manage_permission
     render_403 unless User.current.allowed_to?(:manage_kanban_settings, @project)
+  end
+
+  def check_board_enabled
+    return if @kanban_board.enabled?
+
+    respond_to do |format|
+      format.html do
+        if User.current.allowed_to?(:manage_kanban_settings, @project)
+          flash[:warning] = l(:error_kanban_disabled)
+          redirect_to project_kanban_settings_path(@project)
+        else
+          render_403
+        end
+      end
+      format.json { render json: { success: false, message: l(:error_kanban_disabled) }, status: :forbidden }
+    end
+  end
+
+  def format_statuses(statuses)
+    statuses.map do |status_id, data|
+      {
+        id: status_id,
+        name: data[:status].name,
+        is_closed: data[:is_closed],
+        count: data[:count],
+        issues: data[:issues].map { |issue| @kanban_board.format_issue(issue) }
+      }
+    end
+  end
+
+  def status_transition_allowed?(issue, new_status)
+    return true if issue.status_id == new_status.id
+    return true unless workflow_defined_for_tracker?(issue.tracker_id)
+
+    issue.new_statuses_allowed_to(User.current).include?(new_status)
+  end
+
+  def workflow_defined_for_tracker?(tracker_id)
+    return true unless defined?(WorkflowTransition)
+
+    WorkflowTransition.where(tracker_id: tracker_id).exists?
   end
 
   def kanban_board_params
